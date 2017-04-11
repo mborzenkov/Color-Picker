@@ -1,0 +1,12 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+app/src/test/java/com/example/android/colorpicker/ExampleUnitTest.java
+
+app/src/androidTest/java/com/example/android/colorpicker/ExampleInstrumentedTest.java
