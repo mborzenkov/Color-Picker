@@ -13,6 +13,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -21,11 +22,12 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.os.Vibrator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, View.OnLongClickListener {
 
@@ -39,19 +41,23 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     GradientDrawable mSquareDrawable;
     TextView mRGBValueTextView;
     TextView mHSVValueTextView;
+    Vibrator mVibrator;
 
     int mNumberOfSquares;
     int mFavoritesMax;
     int mStepHUE;
+    int mDivHUE;
+    int mDivVAL;
 
     int[] mArrayOfGradient;
     List<float[]> mSquareColorsHSV = new ArrayList<>();
-    List<float[]> mSquareStandartColorsHSV;
+    List<float[]> mSquareStandardColorsHSV;
     List<float[]> mFavoriteColorsHSV = new ArrayList<>();
 
     boolean editingMode = false;
     int xDelta = 0;
     int yDelta = 0;
+    long timeout = 0;
 
     /*
      * двойной клик по квадрату возвращает цвет в дефолтное значение;
@@ -71,8 +77,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      *
      */
 
-    // TODO: Добавить изменение цвета квадрата при перетягивании влево-вправо
-    // TODO: Добавить изменение цвета квадрата при перетягивании вверх-вниз
     // TODO: Добавить сброс цвета квадрата при дабл тапе
     // TODO: Поправить раскладку, чтобы красиво влазило на экран N с половиной квадратов
     // TODO: Добавить перераскладку под горизонтальный экран
@@ -95,6 +99,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mSquareDrawable = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
         mRGBValueTextView = (TextView) findViewById(R.id.textView_RGB_value);
         mHSVValueTextView = (TextView) findViewById(R.id.textView_HSV_value);
+        mVibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
 
         int curColor = ContextCompat.getColor(this, R.color.colorStartGradient);
         mNumberOfSquares = mResources.getInteger(R.integer.number_of_squares);
@@ -102,6 +107,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mStepHUE = countStep(curColor, ContextCompat.getColor(this, R.color.colorEndGradient), mNumberOfSquares);
         // mStepHUE - это шаг, на котором будут располагаться края мультиградиента, квадрат находится на mStepHUE/2 от края градиента
         // Шаг считается на основании начала градиента, конца и количества квадратов
+        // Скорость перетягивания зависит от дисплея
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        int width = dm.widthPixels;
+        int height = dm.heightPixels;
+        double wi = (double)width/(double)dm.xdpi;
+        double hi = (double)height/(double)dm.ydpi;
+        mDivHUE = (int) (wi * 10);
+        mDivVAL = (int) (hi * 500);
+
+        Log.i("DISPLAY", "WI: " + wi + ", HI: " + hi);
 
         // Эти два массива нужны для создания мультиградиента
         mArrayOfGradient = new int[mNumberOfSquares + 1];
@@ -115,8 +131,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mArrayOfGradient[0] = curColor;
         arrayOfPositions[0] = 0;
         mSquareDrawable.setColor(curColor);
-        mRGBValueTextView.setText("#" + Color.red(curColor) + ", " + Color.green(curColor) + ", " + Color.blue(curColor));
-        mHSVValueTextView.setText("" + String.format("%.2f", curColorHSV[0]) + ", " + String.format("%.2f", curColorHSV[1]) + ", " + String.format("%.2f", curColorHSV[2]));
 
         // Заполняем квадратиками поле
         for (int i = 0; i < mNumberOfSquares; i++) {
@@ -151,11 +165,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
 
         // Ставим цвет у главного квадратика и у приложения, как у первого квадратика
-        int firstColor = Color.HSVToColor(mSquareColorsHSV.get(0));
         mSquareDrawable = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
-        mSquareDrawable.setColor(firstColor);
+        mSquareDrawable.setColor(Color.TRANSPARENT);
         findViewById(R.id.imageView_chosen).setBackground(mSquareDrawable);
-        mActionBar.setBackgroundDrawable(new ColorDrawable(firstColor));
+        changeMainColor(mSquareColorsHSV.get(0));
 
         // Создаем Favorites квадратики с прозрачным цветом для начала
         for (int i = 0; i < mFavoritesMax; i++) {
@@ -187,7 +200,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mSquaresLinearLayout.setBackground(perfectGradient);
 
         // Запоминаем все начальные значения
-        mSquareStandartColorsHSV = Collections.unmodifiableList((new ArrayList<float[]>(mSquareColorsHSV)));
+        mSquareStandardColorsHSV = new ArrayList<>();
+        for (float[] val : mSquareColorsHSV) {
+            mSquareStandardColorsHSV.add(Arrays.copyOf(val, 3));
+        }
 
     }
 
@@ -217,7 +233,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         float[] colorOfSquare = mSquareColorsHSV.get(position);
         changeMainColor(colorOfSquare);
         addFavorite(colorOfSquare);
-        Log.d("CLICK", "YEAH");
     }
 
     /** Обработчик нажатия на Favorites квадратик
@@ -241,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(color);
         mActionBar.setBackgroundDrawable(new ColorDrawable(color));
         mRGBValueTextView.setText("#" + Color.red(color) + ", " + Color.green(color) + ", " + Color.blue(color));
-        mHSVValueTextView.setText("" + String.format("%.2f", colorHSV[0]) + ", " + String.format("%.2f", colorHSV[1]) + ", " + String.format("%.2f", colorHSV[2]));
+        mHSVValueTextView.setText("" + String.format(Locale.US, "%.2f", colorHSV[0]) + ", " + String.format(Locale.US, "%.2f", colorHSV[1]) + ", " + String.format(Locale.US, "%.2f", colorHSV[2]));
     }
 
     /** Добавляет цвет в избранное. Только если еще нет такого цвета. Заменяет последний, если уже заняты все слоты.
@@ -276,8 +291,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             case MotionEvent.ACTION_DOWN:
                 // При нажатии, запоминаем куда нажали
                 lParams = (FrameLayout.LayoutParams) mSquaresLinearLayout.getLayoutParams();
-                xDelta = X - lParams.leftMargin;
-                yDelta = Y - lParams.topMargin;
+                xDelta = X;
+                yDelta = Y;
                 return false;
             case MotionEvent.ACTION_UP:
                 // При отпускании, если был режим редактирования, отключаем его; иначе обрабатываем клик
@@ -292,12 +307,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 // Передвижение работает только в режиме редактирования, меняем цвета
                 if (editingMode) {
                     lParams = (FrameLayout.LayoutParams) mSquaresLinearLayout.getLayoutParams();
-                    float HUE = (float) (X - xDelta);
-                    float VAL = (float) (Y - yDelta);
-                    HUE = (HUE > 0 ? Math.min(HUE, 300) : Math.max(HUE, -300)) / 1;
-                    VAL = (VAL > 0 ? Math.min(VAL, 300) : Math.max(VAL, -300)) / 1000;
+                    float HUE = ((float) (X - xDelta)) / mDivHUE;
+                    float VAL = ((float) (Y - yDelta)) / mDivVAL;
                     updateColor(view, HUE, VAL);
-                    Log.d("XY", "" + X + ", " + Y); // TODO: Удалить логи
+                    xDelta = X;
+                    yDelta = Y;
                 }
                 break;
         }
@@ -314,38 +328,56 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private void updateColor(View view, float HUE, float VAL) {
 
         final int position = (Integer) view.getTag();
-        float[] standartColorHSV = mSquareStandartColorsHSV.get(position);
-        float[] leftBorderHSV = Arrays.copyOf(standartColorHSV, 3);
-        float[] rightBorderHSV = Arrays.copyOf(standartColorHSV, 3);
-        leftBorderHSV[0] -= mStepHUE;
-        rightBorderHSV[0] += mStepHUE;
+        float[] standardColorHSV = mSquareStandardColorsHSV.get(position);
+        float[] currentColorHSV = mSquareColorsHSV.get(position);
+        float leftBorderHUE = Arrays.copyOf(standardColorHSV, 3)[0];
+        float rightBorderHUE = Arrays.copyOf(standardColorHSV, 3)[0];
+        leftBorderHUE -= mStepHUE;
+        rightBorderHUE += mStepHUE;
+        float topVAL = Math.min(standardColorHSV[2] + (standardColorHSV[2] / 4), 1);
+        float bottomVAL = Math.max(standardColorHSV[2] - (standardColorHSV[2] / 4), 0);
 
-        float changedHUE = standartColorHSV[0] + HUE;
-        float changedVAL = standartColorHSV[2] + VAL;
+        float changedHUE = currentColorHSV[0] + HUE;
+        float changedVAL = currentColorHSV[2] - VAL;
 
-        Log.d("HUE", "" + leftBorderHSV[0] + "|" + changedHUE + "|" + rightBorderHSV[0]);
-        Log.d("VAL", "" + leftBorderHSV[0] + "|" + changedVAL + "|" + rightBorderHSV[0]);
+        if (changedHUE < leftBorderHUE) {
+            changedHUE = leftBorderHUE;
+            vibrate();
+        } else if (changedHUE > rightBorderHUE) {
+            changedHUE = rightBorderHUE;
+            vibrate();
+        }
 
-//        if (changedHUE < leftBorderHSV[0]) {
-//            changedHUE = leftBorderHSV[0];
-//        } else if (changedHUE > rightBorderHSV[0]) {
-//            changedHUE = rightBorderHSV[0];
-//        }
-//
-//        colorHSV[0] = changedHUE > 180 ? Math.min(360, changedHUE) : Math.max(0, changedHUE);
-//        colorHSV[2] = changedVAL > 0.5 ? Math.min(1, changedVAL) : Math.max(0, changedVAL);
-//
-//        mSquareColorsHSV.set(position, colorHSV);
-//
-//        View square = mSquaresLinearLayout.getChildAt(position).findViewById(R.id.imageButton_colored_square);
-//        ((GradientDrawable) square.getBackground()).setColor(Color.HSVToColor(colorHSV));
+        if (changedVAL < bottomVAL) {
+            changedVAL = bottomVAL;
+            vibrate();
+        } else if (changedVAL > topVAL) {
+            changedVAL = topVAL;
+            vibrate();
+        }
+
+        currentColorHSV[0] = changedHUE;
+        currentColorHSV[2] = changedVAL;
+
+        View square = mSquaresLinearLayout.getChildAt(position).findViewById(R.id.imageButton_colored_square);
+        ((GradientDrawable) square.getBackground()).setColor(Color.HSVToColor(currentColorHSV));
 
     }
 
     @Override
     public boolean onLongClick(View v) {
-        editingMode = true;
-        mScrollView.requestDisallowInterceptTouchEvent(true);
+        if (!editingMode) {
+            editingMode = true;
+            mScrollView.requestDisallowInterceptTouchEvent(true);
+            vibrate();
+        }
         return false;
+    }
+
+    private void vibrate() {
+        if (System.currentTimeMillis() - timeout > 1000) {
+            mVibrator.vibrate(100);
+            timeout = System.currentTimeMillis();
+        }
     }
 }
