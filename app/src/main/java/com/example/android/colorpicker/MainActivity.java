@@ -39,8 +39,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * Базовая задача: реализовать такой компонент.
      */
-    
-    // TODO: Вывести в ListView 16 одинаковых квадратов
+
     // TODO: Сделать так, чтобы квадраты были разные и раскладывались красиво по градиенту
     // TODO: Обработать нажатия на квадраты и сохранить нажатое значение в отдельный квадрат
     // TODO: Устанавливать фон приложения как выбранный цвет
@@ -57,5 +56,31 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        Resources res = getResources();
+        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.linearLayout_main);
+
+        float[] hsvColorStart = new float[3];
+        float[] hsvColorEnd;
+        Color.colorToHSV(ContextCompat.getColor(this, R.color.colorStartGradient), hsvColorStart);
+        hsvColorEnd = Arrays.copyOf(hsvColorStart, 3);
+        hsvColorEnd[0] += 20;
+
+        GradientDrawable gradientBackground = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.gradient_background);
+        GradientDrawable coloredSquare = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
+        coloredSquare.setColor(Color.HSVToColor(hsvColorEnd));
+        gradientBackground.setColors(new int[] {Color.HSVToColor(hsvColorStart), Color.HSVToColor(hsvColorEnd)});
+
+        for (int i = 0; i < 16; i++) {
+
+            View square = getLayoutInflater().inflate(R.layout.square_list_item, null);
+
+            square.findViewById(R.id.relaviteLayout_squares).setBackground(gradientBackground);
+            square.findViewById(R.id.imageView_colored_square).setBackground(coloredSquare);
+            linearLayout.addView(square);
+            allSquares.put(square, Color.HSVToColor(hsvColorStart));
+            hsvColorStart[0] = hsvColorEnd[0];
+        }
     }
 }
