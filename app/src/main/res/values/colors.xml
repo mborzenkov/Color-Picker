@@ -4,7 +4,7 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="colorStartGradient">#f44336</color>
-    <color name="colorEndGradient">#ffeb3b</color>
-    <color name="colorMiddleGradient">@color/colorPrimary</color>
+    <color name="colorEndGradient">#e91e63</color>
+    <color name="colorMiddleGradient">#009688</color>
     <color name="colorStroke">#ffffff</color>
 </resources>

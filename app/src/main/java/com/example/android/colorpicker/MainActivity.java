@@ -2,21 +2,27 @@ package com.example.android.colorpicker;
 
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Shader;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.PaintDrawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RectShape;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;;
 
 public class MainActivity extends AppCompatActivity {
 
-    Map<View, Integer> allSquares = new HashMap<>();
+    Resources res;
+    int numberOfSquares;
+    int hsvStep;
+    int[] arrayOfColors;
+    LinearLayout linearLayout;
 
     /* На экране присутствуют:
      *
@@ -40,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
      * Базовая задача: реализовать такой компонент.
      */
 
-    // TODO: Сделать так, чтобы квадраты были разные и раскладывались красиво по градиенту
     // TODO: Обработать нажатия на квадраты и сохранить нажатое значение в отдельный квадрат
     // TODO: Устанавливать фон приложения как выбранный цвет
     // TODO: Добавить избранные квадраты, сохранять туда историю
@@ -50,37 +55,74 @@ public class MainActivity extends AppCompatActivity {
     // TODO: Добавить сброс цвета квадрата при дабл тапе
     // TODO: Поправить раскладку, чтобы красиво влазило на экран N с половиной квадратов
     // TODO: Добавить перераскладку под горизонтальный экран
-    // TODO: Добавить возможность программной настройки (values) количества квадратов и градиента start-end
+    // TODO: Добавить возможность настройки квадратов и градиента start-end
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        int curColor = ContextCompat.getColor(this, R.color.colorStartGradient);
 
-        Resources res = getResources();
-        LinearLayout linearLayout = (LinearLayout) findViewById(R.id.linearLayout_main);
+        res = getResources();
+        numberOfSquares = res.getInteger(R.integer.number_of_squares);
 
-        float[] hsvColorStart = new float[3];
-        float[] hsvColorEnd;
-        Color.colorToHSV(ContextCompat.getColor(this, R.color.colorStartGradient), hsvColorStart);
-        hsvColorEnd = Arrays.copyOf(hsvColorStart, 3);
-        hsvColorEnd[0] += 20;
+        hsvStep = countStep(curColor, ContextCompat.getColor(this, R.color.colorEndGradient), numberOfSquares);
+        arrayOfColors = new int[numberOfSquares + 1];
+        linearLayout = (LinearLayout) findViewById(R.id.linearLayout_main);
 
-        GradientDrawable gradientBackground = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.gradient_background);
-        GradientDrawable coloredSquare = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
-        coloredSquare.setColor(Color.HSVToColor(hsvColorEnd));
-        gradientBackground.setColors(new int[] {Color.HSVToColor(hsvColorStart), Color.HSVToColor(hsvColorEnd)});
 
-        for (int i = 0; i < 16; i++) {
+        final float[] arrayOfPositions = new float[numberOfSquares + 1];
+        GradientDrawable coloredSquare;
+        final LayoutInflater layoutInflater = getLayoutInflater();
 
-            View square = getLayoutInflater().inflate(R.layout.square_list_item, null);
+        float[] curColorHSV = new float[3];
+        arrayOfColors[0] = curColor;
+        arrayOfPositions[0] = 0;
 
-            square.findViewById(R.id.relaviteLayout_squares).setBackground(gradientBackground);
+        for (int i = 0; i < numberOfSquares; i++) {
+
+            Color.colorToHSV(curColor, curColorHSV);
+
+            curColorHSV[0] += hsvStep;
+            coloredSquare = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
+            coloredSquare.setColor(Color.HSVToColor(curColorHSV));
+            curColorHSV[0] += hsvStep;
+            curColor = Color.HSVToColor(curColorHSV);
+
+            View square = layoutInflater.inflate(R.layout.square_list_item, null);
             square.findViewById(R.id.imageView_colored_square).setBackground(coloredSquare);
             linearLayout.addView(square);
-            allSquares.put(square, Color.HSVToColor(hsvColorStart));
-            hsvColorStart[0] = hsvColorEnd[0];
+
+            arrayOfColors[i+1] = curColor;
+            arrayOfPositions[i+1] = (float) i / (float) numberOfSquares;
+
         }
+
+        ShapeDrawable.ShaderFactory shaderFactory = new ShapeDrawable.ShaderFactory() {
+            @Override
+            public Shader resize(int width, int height) {
+                LinearGradient linearGradient = new LinearGradient(0, 0, width, height,
+                        arrayOfColors,
+                        arrayOfPositions,
+                        Shader.TileMode.REPEAT);
+                return linearGradient;
+            }
+        };
+        PaintDrawable perfectGradient = new PaintDrawable();
+        perfectGradient.setShape(new RectShape());
+        perfectGradient.setShaderFactory(shaderFactory);
+
+        linearLayout.setBackground(perfectGradient);
+
+    }
+
+    private int countStep(int startColor, int endColor, int numberOfSquares) {
+        float[] startColorHSV = new float[3];
+        float[] endColorHSV = new float[3];
+        Color.colorToHSV(startColor, startColorHSV);
+        Color.colorToHSV(endColor, endColorHSV);
+
+        return Math.round((endColorHSV[0] - startColorHSV[0]) / (float) numberOfSquares);
     }
 }
