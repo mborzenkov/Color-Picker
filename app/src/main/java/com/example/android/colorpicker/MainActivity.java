@@ -9,6 +9,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.PaintDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
+import android.renderscript.Matrix2f;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -32,6 +33,8 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, View.OnLongClickListener {
 
     // Объявляем все переменные
+    private final String FAVORITES_KEY = "FAV";
+
     Resources mResources;
     ActionBar mActionBar;
     LayoutInflater mLayoutInflater;
@@ -52,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     int[] mArrayOfGradient;
     List<float[]> mSquareColorsHSV = new ArrayList<>();
     List<float[]> mSquareStandardColorsHSV;
-    List<float[]> mFavoriteColorsHSV = new ArrayList<>();
+    List<Integer> mFavoriteColors = new ArrayList<>();
 
     boolean editingMode = false;
     int xDelta = 0;
@@ -78,8 +81,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      */
 
     // TODO: Добавить сброс цвета квадрата при дабл тапе
-    // TODO: Поправить раскладку, чтобы красиво влазило на экран N с половиной квадратов
-    // TODO: Добавить перераскладку под горизонтальный экран
     // TODO: Добавить возможность настройки квадратов и градиента start-end
     // TODO: Комментарии и оптимизация
 
@@ -205,6 +206,19 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             mSquareStandardColorsHSV.add(Arrays.copyOf(val, 3));
         }
 
+        if (savedInstanceState != null) {
+            for (Integer color : savedInstanceState.getIntegerArrayList(FAVORITES_KEY)) {
+                addFavorite(color);
+            }
+
+        }
+
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putIntegerArrayList(FAVORITES_KEY, (ArrayList<Integer>) mFavoriteColors);
     }
 
     /**
@@ -232,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         final int position = (Integer) view.getTag();
         float[] colorOfSquare = mSquareColorsHSV.get(position);
         changeMainColor(colorOfSquare);
-        addFavorite(colorOfSquare);
+        addFavorite(Color.HSVToColor(colorOfSquare));
     }
 
     /** Обработчик нажатия на Favorites квадратик
@@ -241,8 +255,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      */
     public void clickOnFavSquare(View view) {
         final int position = (Integer) view.getTag();
-        if (position < mFavoriteColorsHSV.size()) {
-            float[] colorOfSquare = mFavoriteColorsHSV.get(position);
+        if (position < mFavoriteColors.size()) {
+            float[] colorOfSquare = new float[3];
+            Color.colorToHSV(mFavoriteColors.get(position), colorOfSquare);
             changeMainColor(colorOfSquare);
         }
     }
@@ -263,21 +278,24 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      *
      * @param colorHSV Цвет в HSV, float[] размерностью 3
      */
-    private void addFavorite(float[] colorHSV) {
-        if (mFavoriteColorsHSV.indexOf(colorHSV) == -1) {
+    private void addFavorite(int color) {
+        if (mFavoriteColors.indexOf(color) == -1) {
 
-            if (mFavoriteColorsHSV.size() < mFavoritesMax) {
-                mFavoriteColorsHSV.add(colorHSV);
-            } else {
-                mFavoriteColorsHSV.add(0, colorHSV);
-                mFavoriteColorsHSV.remove(mFavoriteColorsHSV.size()-1);
-            }
-
-            for (int i = 0; i < mFavoriteColorsHSV.size(); i++) {
+            if (mFavoriteColors.size() < mFavoritesMax) {
+                mFavoriteColors.add(color);
+                int i = mFavoriteColors.size()-1;
                 View favSquare = mFavoritesLinearLayout.getChildAt(i).findViewById(R.id.imageButton_favorite_color);
-                ((GradientDrawable) favSquare.getBackground()).setColor(Color.HSVToColor(mFavoriteColorsHSV.get(i)));
-
+                ((GradientDrawable) favSquare.getBackground()).setColor(color);
+            } else {
+                mFavoriteColors.add(0, color);
+                mFavoriteColors.remove(mFavoriteColors.size()-1);
+                for (int i = 0; i < mFavoriteColors.size(); i++) {
+                    View favSquare = mFavoritesLinearLayout.getChildAt(i).findViewById(R.id.imageButton_favorite_color);
+                    ((GradientDrawable) favSquare.getBackground()).setColor(mFavoriteColors.get(i));
+                }
             }
+
+
         }
     }
 
@@ -374,6 +392,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         return false;
     }
 
+    /** Заставляет телефон вибрировать с таймаутом 1 секунда
+     *
+     */
     private void vibrate() {
         if (System.currentTimeMillis() - timeout > 1000) {
             mVibrator.vibrate(100);
