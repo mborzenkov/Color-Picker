@@ -4,11 +4,13 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
 import android.graphics.Shader;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.PaintDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -23,6 +25,8 @@ public class MainActivity extends AppCompatActivity {
     int hsvStep;
     int[] arrayOfColors;
     LinearLayout linearLayout;
+    GradientDrawable coloredSquare;
+    ActionBar mActionBar;
 
     /* На экране присутствуют:
      *
@@ -46,8 +50,6 @@ public class MainActivity extends AppCompatActivity {
      * Базовая задача: реализовать такой компонент.
      */
 
-    // TODO: Обработать нажатия на квадраты и сохранить нажатое значение в отдельный квадрат
-    // TODO: Устанавливать фон приложения как выбранный цвет
     // TODO: Добавить избранные квадраты, сохранять туда историю
     // TODO: Добавить обработку длительного нажатия
     // TODO: Добавить изменение цвета квадрата при перетягивании влево-вправо
@@ -70,10 +72,10 @@ public class MainActivity extends AppCompatActivity {
         hsvStep = countStep(curColor, ContextCompat.getColor(this, R.color.colorEndGradient), numberOfSquares);
         arrayOfColors = new int[numberOfSquares + 1];
         linearLayout = (LinearLayout) findViewById(R.id.linearLayout_main);
+        mActionBar = getSupportActionBar();
 
 
         final float[] arrayOfPositions = new float[numberOfSquares + 1];
-        GradientDrawable coloredSquare;
         final LayoutInflater layoutInflater = getLayoutInflater();
 
         float[] curColorHSV = new float[3];
@@ -91,13 +93,20 @@ public class MainActivity extends AppCompatActivity {
             curColor = Color.HSVToColor(curColorHSV);
 
             View square = layoutInflater.inflate(R.layout.square_list_item, null);
-            square.findViewById(R.id.imageView_colored_square).setBackground(coloredSquare);
+            View squareButton = square.findViewById(R.id.imageButton_colored_square);
+            squareButton.setBackground(coloredSquare);
+            squareButton.setTag(i);
             linearLayout.addView(square);
 
             arrayOfColors[i+1] = curColor;
             arrayOfPositions[i+1] = (float) i / (float) numberOfSquares;
 
         }
+
+        coloredSquare = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
+        coloredSquare.setColor(arrayOfColors[0]);
+        findViewById(R.id.imageView_chosen).setBackground(coloredSquare);
+        mActionBar.setBackgroundDrawable(new ColorDrawable(arrayOfColors[0]));
 
         ShapeDrawable.ShaderFactory shaderFactory = new ShapeDrawable.ShaderFactory() {
             @Override
@@ -124,5 +133,17 @@ public class MainActivity extends AppCompatActivity {
         Color.colorToHSV(endColor, endColorHSV);
 
         return Math.round((endColorHSV[0] - startColorHSV[0]) / (float) numberOfSquares);
+    }
+
+    public void clickOnSquare(View view) {
+
+        final int position = (Integer) view.getTag();
+        float[] colorOfSquareHSV = new float[3];
+        Color.colorToHSV(arrayOfColors[position], colorOfSquareHSV);
+        colorOfSquareHSV[0] += hsvStep;
+        int colorOfSquare = Color.HSVToColor(colorOfSquareHSV);
+
+        ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(colorOfSquare);
+        mActionBar.setBackgroundDrawable(new ColorDrawable(colorOfSquare));
     }
 }
