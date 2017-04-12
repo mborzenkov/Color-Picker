@@ -57,8 +57,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * Базовая задача: реализовать такой компонент.
      */
-
-    // TODO: Добавить обработку длительного нажатия
+    
     // TODO: Добавить изменение цвета квадрата при перетягивании влево-вправо
     // TODO: Добавить изменение цвета квадрата при перетягивании вверх-вниз
     // TODO: Добавить сброс цвета квадрата при дабл тапе
@@ -106,6 +105,13 @@ public class MainActivity extends AppCompatActivity {
 
             View square = mLayoutInflater.inflate(R.layout.square_list_item, linearLayoutSquares, false);
             View squareButton = square.findViewById(R.id.imageButton_colored_square);
+            squareButton.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    longClick(v);
+                    return true;
+                }
+            });
             squareButton.setBackground(coloredSquare);
             squareButton.setTag(i);
             linearLayoutSquares.addView(square);
@@ -197,6 +203,10 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }
+    }
+
+    private void longClick(View view) {
+
     }
 
 }
