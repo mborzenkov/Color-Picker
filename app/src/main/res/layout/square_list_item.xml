@@ -12,8 +12,6 @@
         style="@style/ColoredSquare"
         tools:background="@drawable/colored_square"
         android:longClickable="true"
-        android:onClick="clickOnSquare"
-        android:clickable="true"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
 
