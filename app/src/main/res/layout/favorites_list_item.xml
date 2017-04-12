@@ -8,10 +8,12 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
-    <ImageView
-        android:id="@+id/imageView_fav_color"
+    <ImageButton
+        android:id="@+id/imageButton_favorite_color"
         style="@style/FavoritesSquare"
         tools:background="@drawable/colored_square"
+        android:onClick="clickOnFavSquare"
+        android:clickable="true"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />
 
@@ -19,9 +21,9 @@
         android:id="@+id/imageView_fav_star"
         style="@style/FavoritesStar"
         app:srcCompat="@android:drawable/btn_star"
-        android:layout_alignTop="@+id/imageView_fav_color"
-        android:layout_alignRight="@+id/imageView_fav_color"
-        android:layout_alignEnd="@+id/imageView_fav_color" />
+        android:layout_alignTop="@+id/imageButton_favorite_color"
+        android:layout_alignRight="@+id/imageButton_favorite_color"
+        android:layout_alignEnd="@+id/imageButton_favorite_color" />
 
 
 </RelativeLayout>
