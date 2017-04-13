@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     // Объявляем все переменные
     private final String FAVORITES_KEY = "FAV";
+    private final String CHOSEN_KEY = "CHOSEN";
     private final long QUALIFICATION_SPAN = 200;
 
     private Resources mResources;
@@ -166,9 +167,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         }
 
-        // Ставим цвет у главного квадратика и у приложения, как у первого квадратика
+        // Ставим цвет у главного квадратика и у приложения
         float[] chosenColorHSV = new float[3];
-        chosenColorHSV = Arrays.copyOf(mSquareColorsHSV.get(0), 3);
+        chosenColorHSV = savedInstanceState != null ? savedInstanceState.getFloatArray(CHOSEN_KEY) : Arrays.copyOf(mSquareColorsHSV.get(0), 3);
         mSquareDrawable = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
         mSquareDrawable.setColor(Color.TRANSPARENT);
         findViewById(R.id.imageView_chosen).setBackground(mSquareDrawable);
@@ -213,7 +214,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             for (Integer color : savedInstanceState.getIntegerArrayList(FAVORITES_KEY)) {
                 addFavorite(color);
             }
-
         }
 
     }
@@ -222,6 +222,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putIntegerArrayList(FAVORITES_KEY, (ArrayList<Integer>) mFavoriteColors);
+        outState.putFloatArray(CHOSEN_KEY, chosenColorHSV);
     }
 
     /**
