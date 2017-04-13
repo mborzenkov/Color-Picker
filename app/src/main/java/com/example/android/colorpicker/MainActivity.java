@@ -9,6 +9,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.PaintDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
+import android.os.Handler;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     // Объявляем все переменные
     private final String FAVORITES_KEY = "FAV";
+    private final long QUALIFICATION_SPAN = 200;
 
     private Resources mResources;
     private ActionBar mActionBar;
@@ -44,6 +46,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private TextView mRGBValueTextView;
     private TextView mHSVValueTextView;
     private Vibrator mVibrator;
+    private Handler mHandler = new Handler();
 
     private int mNumberOfSquares;
     private int mFavoritesMax;
@@ -57,6 +60,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private List<Integer> mFavoriteColors = new ArrayList<>();
 
     private boolean editingMode = false;
+    private boolean doubleClick = false;
+    private View lastView = null;
     private int xDelta = 0;
     private int yDelta = 0;
     private long timeout = 0;
@@ -78,10 +83,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * P.S. редактирование цвета в квадрате не меняет текущий выбранный цвет, чтобы выбрать цвет в квадрате — надо по нему кликнуть после редактирования
      *
      */
-
-    // TODO: Добавить сброс цвета квадрата при дабл тапе
-    // TODO: Добавить возможность настройки квадратов и градиента start-end
-    // TODO: Комментарии и оптимизация
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -316,8 +317,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 if (editingMode) {
                     editingMode = false;
                     mScrollView.requestDisallowInterceptTouchEvent(false);
+                } else if (doubleClick && view.equals(lastView)) {
+                    reverseColor(view);
+                    doubleClick = false;
                 } else {
-                    clickOnSquare(view);
+                    //Log.i("CLICK", "SINGLE");
+                    doubleClick = true;
+                    lastView = view;
+                    mHandler.postDelayed(new HandleClick(view), QUALIFICATION_SPAN);
                 }
                 return false;
             case MotionEvent.ACTION_MOVE:
@@ -334,6 +341,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
         mFavoritesLinearLayout.invalidate();
         return false;
+    }
+
+    class HandleClick implements Runnable {
+        View view;
+        HandleClick(View view) { this.view = view; }
+        public void run() {
+            if (doubleClick) {
+                clickOnSquare(view);
+                doubleClick = false;
+            }
+        }
     }
 
     /** Обрабатывает изменения цвета в квадратике
@@ -388,8 +406,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private void reverseColor(View view) {
         final int position = (Integer) view.getTag();
         float[] standardColorHSV = mSquareStandardColorsHSV.get(position);
-        float[] currentColorHSV = mSquareColorsHSV.get(position);
+        float[] currentColorHSV;
         currentColorHSV = Arrays.copyOf(standardColorHSV, 3);
+        mSquareColorsHSV.set(position, currentColorHSV);
         View square = mSquaresLinearLayout.getChildAt(position).findViewById(R.id.imageButton_colored_square);
         ((GradientDrawable) square.getBackground()).setColor(Color.HSVToColor(currentColorHSV));
     }
