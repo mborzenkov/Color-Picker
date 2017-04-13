@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private List<float[]> mSquareColorsHSV = new ArrayList<>();
     private List<float[]> mSquareStandardColorsHSV;
     private List<Integer> mFavoriteColors = new ArrayList<>();
+    private float[] chosenColorHSV = new float[3];
 
     private boolean editingMode = false;
     private boolean doubleClick = false;
@@ -166,10 +167,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
 
         // Ставим цвет у главного квадратика и у приложения, как у первого квадратика
+        float[] chosenColorHSV = new float[3];
+        chosenColorHSV = Arrays.copyOf(mSquareColorsHSV.get(0), 3);
         mSquareDrawable = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
         mSquareDrawable.setColor(Color.TRANSPARENT);
         findViewById(R.id.imageView_chosen).setBackground(mSquareDrawable);
-        changeMainColor(mSquareColorsHSV.get(0));
+        changeMainColor(chosenColorHSV);
 
         // Создаем Favorites квадратики с прозрачным цветом для начала
         for (int i = 0; i < mFavoritesMax; i++) {
@@ -267,11 +270,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      * @param colorHSV Цвет в HSV, float[] размерностью 3
      */
     private void changeMainColor(float[] colorHSV) {
-        int color = Color.HSVToColor(colorHSV);
+        chosenColorHSV = Arrays.copyOf(colorHSV, 3);
+        int color = Color.HSVToColor(chosenColorHSV);
         ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(color);
         mActionBar.setBackgroundDrawable(new ColorDrawable(color));
         mRGBValueTextView.setText("#" + Color.red(color) + ", " + Color.green(color) + ", " + Color.blue(color));
-        mHSVValueTextView.setText("" + String.format(Locale.US, "%.2f", colorHSV[0]) + ", " + String.format(Locale.US, "%.2f", colorHSV[1]) + ", " + String.format(Locale.US, "%.2f", colorHSV[2]));
+        mHSVValueTextView.setText("" + String.format(Locale.US, "%.2f", chosenColorHSV[0]) + ", " + String.format(Locale.US, "%.2f", chosenColorHSV[1]) + ", " + String.format(Locale.US, "%.2f", chosenColorHSV[2]));
     }
 
     /** Добавляет цвет в избранное. Только если еще нет такого цвета. Заменяет последний, если уже заняты все слоты.
@@ -317,6 +321,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 if (editingMode) {
                     editingMode = false;
                     mScrollView.requestDisallowInterceptTouchEvent(false);
+                    ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(Color.HSVToColor(chosenColorHSV));
                 } else if (doubleClick && view.equals(lastView)) {
                     reverseColor(view);
                     doubleClick = false;
@@ -394,8 +399,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         currentColorHSV[0] = changedHUE;
         currentColorHSV[2] = changedVAL;
 
+
+        int dynamicColor = Color.HSVToColor(currentColorHSV);
         View square = mSquaresLinearLayout.getChildAt(position).findViewById(R.id.imageButton_colored_square);
-        ((GradientDrawable) square.getBackground()).setColor(Color.HSVToColor(currentColorHSV));
+        ((GradientDrawable) square.getBackground()).setColor(dynamicColor);
+
+        // Обновляем основной параллельно
+        ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(dynamicColor);
 
     }
 
