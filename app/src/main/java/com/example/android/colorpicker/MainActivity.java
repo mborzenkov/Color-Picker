@@ -9,7 +9,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.PaintDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
-import android.renderscript.Matrix2f;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -35,32 +34,32 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     // Объявляем все переменные
     private final String FAVORITES_KEY = "FAV";
 
-    Resources mResources;
-    ActionBar mActionBar;
-    LayoutInflater mLayoutInflater;
-    HorizontalScrollView mScrollView;
-    LinearLayout mSquaresLinearLayout;
-    LinearLayout mFavoritesLinearLayout;
-    GradientDrawable mSquareDrawable;
-    TextView mRGBValueTextView;
-    TextView mHSVValueTextView;
-    Vibrator mVibrator;
+    private Resources mResources;
+    private ActionBar mActionBar;
+    private LayoutInflater mLayoutInflater;
+    private HorizontalScrollView mScrollView;
+    private LinearLayout mSquaresLinearLayout;
+    private LinearLayout mFavoritesLinearLayout;
+    private GradientDrawable mSquareDrawable;
+    private TextView mRGBValueTextView;
+    private TextView mHSVValueTextView;
+    private Vibrator mVibrator;
 
-    int mNumberOfSquares;
-    int mFavoritesMax;
-    int mStepHUE;
-    int mDivHUE;
-    int mDivVAL;
+    private int mNumberOfSquares;
+    private int mFavoritesMax;
+    private int mStepHUE;
+    private int mDivHUE;
+    private int mDivVAL;
 
-    int[] mArrayOfGradient;
-    List<float[]> mSquareColorsHSV = new ArrayList<>();
-    List<float[]> mSquareStandardColorsHSV;
-    List<Integer> mFavoriteColors = new ArrayList<>();
+    private int[] mArrayOfGradient;
+    private List<float[]> mSquareColorsHSV = new ArrayList<>();
+    private List<float[]> mSquareStandardColorsHSV;
+    private List<Integer> mFavoriteColors = new ArrayList<>();
 
-    boolean editingMode = false;
-    int xDelta = 0;
-    int yDelta = 0;
-    long timeout = 0;
+    private boolean editingMode = false;
+    private int xDelta = 0;
+    private int yDelta = 0;
+    private long timeout = 0;
 
     /*
      * двойной клик по квадрату возвращает цвет в дефолтное значение;
@@ -382,14 +381,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     }
 
-    @Override
-    public boolean onLongClick(View v) {
-        if (!editingMode) {
-            editingMode = true;
-            mScrollView.requestDisallowInterceptTouchEvent(true);
-            vibrate();
-        }
-        return false;
+    /** Возвращает цвет квадратика по умолчанию
+     *
+     * @param view Квадратик
+     */
+    private void reverseColor(View view) {
+        final int position = (Integer) view.getTag();
+        float[] standardColorHSV = mSquareStandardColorsHSV.get(position);
+        float[] currentColorHSV = mSquareColorsHSV.get(position);
+        currentColorHSV = Arrays.copyOf(standardColorHSV, 3);
+        View square = mSquaresLinearLayout.getChildAt(position).findViewById(R.id.imageButton_colored_square);
+        ((GradientDrawable) square.getBackground()).setColor(Color.HSVToColor(currentColorHSV));
     }
 
     /** Заставляет телефон вибрировать с таймаутом 1 секунда
@@ -400,5 +402,15 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             mVibrator.vibrate(100);
             timeout = System.currentTimeMillis();
         }
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+        if (!editingMode) {
+            editingMode = true;
+            mScrollView.requestDisallowInterceptTouchEvent(true);
+            vibrate();
+        }
+        return false;
     }
 }
