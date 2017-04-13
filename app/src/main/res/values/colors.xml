@@ -3,4 +3,9 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <!-- Требуется, чтобы HUE в endColor был > HUE в startColor -->
+    <color name="colorStartGradient">#f44336</color>
+    <color name="colorEndGradient">#e91e63</color>
+    <color name="colorMiddleGradient">#009688</color>
+    <color name="colorStroke">#ffffff</color>
 </resources>

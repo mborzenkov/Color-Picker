@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Цветовая палитра</string>
+    <string name="label_chosen_color">Выбранный цвет</string>
+    <string name="label_favorites">Последние цвета</string>
+</resources>
