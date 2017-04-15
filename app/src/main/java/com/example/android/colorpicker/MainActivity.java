@@ -3,6 +3,7 @@ package com.example.android.colorpicker;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
+import android.graphics.PorterDuff;
 import android.graphics.Shader;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
@@ -68,8 +69,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int yDelta = 0;
     private long timeout = 0;
 
-    // TODO: Изменение цветовой палитры, чтобы все цвета были красивые и первым был красный
-
     /* TODO: Чистка кода и рефакторинг
      *      @NonNull & @Nullable, static переменные, константы, static методы,
      *      Tag проверка на null, chosenColorHSV сразу со значениями, Color.Transparent в layout,
@@ -114,8 +113,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         double hi = (double)height/(double)dm.ydpi;
         mDivHUE = (int) (wi * 10);
         mDivVAL = (int) (hi * 500);
-
-        Log.i("DISPLAY", "WI: " + wi + ", HI: " + hi);
 
         // Эти два массива нужны для создания мультиградиента
         final float[] arrayOfPositions = new float[mNumberOfSquares + 1];
@@ -294,11 +291,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     editingMode = false;
                     mScrollView.requestDisallowInterceptTouchEvent(false);
                     changeMainColor(chosenColorHSV, false);
+                    mSquaresLinearLayout.getBackground().clearColorFilter();
                 } else if (doubleClick && view.equals(lastView)) {
                     reverseColor(view);
                     doubleClick = false;
                 } else {
-                    //Log.i("CLICK", "SINGLE");
                     doubleClick = true;
                     lastView = view;
                     mHandler.postDelayed(new HandleClick(view), QUALIFICATION_SPAN);
@@ -341,10 +338,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         final int position = (Integer) view.getTag();
         float[] standardColorHSV = mSquareStandardColorsHSV.get(position);
         float[] currentColorHSV = mSquareColorsHSV.get(position);
-        float leftBorderHUE = Arrays.copyOf(standardColorHSV, 3)[0];
-        float rightBorderHUE = Arrays.copyOf(standardColorHSV, 3)[0];
-        leftBorderHUE -= mStepHUE;
-        rightBorderHUE += mStepHUE;
+        float leftBorderHUE = standardColorHSV[0];
+        float rightBorderHUE = standardColorHSV[0];
+        leftBorderHUE = Math.max(leftBorderHUE - mStepHUE, 0);
+        rightBorderHUE = Math.min(rightBorderHUE + mStepHUE, 360);
         float topVAL = Math.min(standardColorHSV[2] + (standardColorHSV[2] / 4), 1);
         float bottomVAL = Math.max(standardColorHSV[2] - (standardColorHSV[2] / 4), 0);
 
@@ -410,11 +407,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 if (!editingMode) {
                     editingMode = true;
                     mScrollView.requestDisallowInterceptTouchEvent(true);
+                    int position = (Integer) v.getTag();
+                    changeMainColor(mSquareColorsHSV.get(position), false);
+                    mSquaresLinearLayout.getBackground().setColorFilter(Color.argb(25, 0, 0, 0), PorterDuff.Mode.DARKEN);
                     vibrate();
                 }
                 return false;
             case R.id.imageButton_favorite_color:
-                Log.i("EVENT", "Long press on fav square " + v.getTag());
                 int position = (Integer) v.getTag();
                 setFavoriteColor(position, Color.HSVToColor(chosenColorHSV));
                 vibrate();
