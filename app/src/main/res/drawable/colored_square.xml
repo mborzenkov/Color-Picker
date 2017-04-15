@@ -8,6 +8,7 @@
         android:radius="@dimen/square_round_radius" />
 
     <solid
+        android:color="@android:color/transparent"
         tools:color="@color/colorMiddleGradient" />
 
     <stroke
