@@ -68,23 +68,19 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int yDelta = 0;
     private long timeout = 0;
 
-    /*
-     * двойной клик по квадрату возвращает цвет в дефолтное значение;
-     * оповещение пользователя о входе в режим редактирования;
-     * оповещение пользователя о достижении граничных значений в режиме редактирования.
-     * Оповещение пользователя может быть сделано через: вибрацию, звук, визуальное оповещение (см. сам)
-     *
-     * делаем longtap на квадрат с цветом;
-     * не отпуская палец от экрана ведем влево или вправо:
-     * горизонтальный скролл блокируется;
-     * цвет в квадрате меняется в соответствующую сторону по шкале оттенков hue;
-     * граница изменения — крайнее значение для первого и последнего квадратов или половина пути до соседнего квадрата;
-     * отрываем палец от экрана — выходим из режима редактирования цвета;
-     * bonus: не отрывая палец от экрана ведем вверх или вниз — меняем параметр V в модели HSV (он же Brightness);
-     * bonus: в режиме редактирования может быть не виден квадрат с цветом, который мы редактируем (закрыт пальцем); подумать как решить эту проблему.
-     * P.S. редактирование цвета в квадрате не меняет текущий выбранный цвет, чтобы выбрать цвет в квадрате — надо по нему кликнуть после редактирования
-     *
+    // TODO: Изменить поведение избранных цветов - сделать возможность их избирать с выбором места и заменой
+    // TODO: Изменение цветовой палитры, чтобы все цвета были красивые и первым был красный
+
+    /* TODO: Чистка кода и рефакторинг
+     *      @NonNull & @Nullable, static переменные, константы, static методы,
+     *      Tag проверка на null, chosenColorHSV сразу со значениями, Color.Transparent в layout,
+     *      работа с цветами Arrays.copyOf в метод класса,
+     *      DRY на View favSquare = mFavoritesLinearLayout.getChildAt(i).findViewById(R.id.imageButton_favorite_color);     ((GradientDrawable) favSquare.getBackground()).setColor(color);
+     *      методы принимают View - поменять на более конкретный тип
+     *      параметры вибрации в константы и поменьше
      */
+
+    // TODO: Обновить README.md
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mSquareDrawable = (GradientDrawable) ContextCompat.getDrawable(this, R.drawable.colored_square);
         mSquareDrawable.setColor(Color.TRANSPARENT);
         findViewById(R.id.imageView_chosen).setBackground(mSquareDrawable);
-        changeMainColor(chosenColorHSV);
+        changeMainColor(chosenColorHSV, true);
 
         // Создаем Favorites квадратики с прозрачным цветом для начала
         for (int i = 0; i < mFavoritesMax; i++) {
@@ -249,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private void clickOnSquare(View view) {
         final int position = (Integer) view.getTag();
         float[] colorOfSquare = mSquareColorsHSV.get(position);
-        changeMainColor(colorOfSquare);
+        changeMainColor(colorOfSquare, true);
         addFavorite(Color.HSVToColor(colorOfSquare));
     }
 
@@ -262,21 +258,24 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (position < mFavoriteColors.size()) {
             float[] colorOfSquare = new float[3];
             Color.colorToHSV(mFavoriteColors.get(position), colorOfSquare);
-            changeMainColor(colorOfSquare);
+            changeMainColor(colorOfSquare, true);
         }
     }
 
     /** Меняет цвет у основного квадратика, надписей вокруг него и строки меню на переданный colorHSV
      *
      * @param colorHSV Цвет в HSV, float[] размерностью 3
+     * @param saveAsChosen Признак, нужно ли сохранить цвет
      */
-    private void changeMainColor(float[] colorHSV) {
-        chosenColorHSV = Arrays.copyOf(colorHSV, 3);
-        int color = Color.HSVToColor(chosenColorHSV);
+    private void changeMainColor(float[] colorHSV, boolean saveAsChosen) {
+        if (saveAsChosen) {
+            chosenColorHSV = Arrays.copyOf(colorHSV, 3);
+        }
+        int color = Color.HSVToColor(colorHSV);
         ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(color);
         mActionBar.setBackgroundDrawable(new ColorDrawable(color));
         mRGBValueTextView.setText("#" + Color.red(color) + ", " + Color.green(color) + ", " + Color.blue(color));
-        mHSVValueTextView.setText("" + String.format(Locale.US, "%.2f", chosenColorHSV[0]) + ", " + String.format(Locale.US, "%.2f", chosenColorHSV[1]) + ", " + String.format(Locale.US, "%.2f", chosenColorHSV[2]));
+        mHSVValueTextView.setText("" + String.format(Locale.US, "%.2f", colorHSV[0]) + ", " + String.format(Locale.US, "%.2f", colorHSV[1]) + ", " + String.format(Locale.US, "%.2f", colorHSV[2]));
     }
 
     /** Добавляет цвет в избранное. Только если еще нет такого цвета. Заменяет последний, если уже заняты все слоты.
@@ -309,11 +308,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         // Получаем позицию эвента
         final int X = (int) event.getRawX();
         final int Y = (int) event.getRawY();
-        FrameLayout.LayoutParams lParams;
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 // При нажатии, запоминаем куда нажали
-                lParams = (FrameLayout.LayoutParams) mSquaresLinearLayout.getLayoutParams();
                 xDelta = X;
                 yDelta = Y;
                 return false;
@@ -322,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 if (editingMode) {
                     editingMode = false;
                     mScrollView.requestDisallowInterceptTouchEvent(false);
-                    ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(Color.HSVToColor(chosenColorHSV));
+                    changeMainColor(chosenColorHSV, false);
                 } else if (doubleClick && view.equals(lastView)) {
                     reverseColor(view);
                     doubleClick = false;
@@ -336,7 +333,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             case MotionEvent.ACTION_MOVE:
                 // Передвижение работает только в режиме редактирования, меняем цвета
                 if (editingMode) {
-                    lParams = (FrameLayout.LayoutParams) mSquaresLinearLayout.getLayoutParams();
                     float HUE = ((float) (X - xDelta)) / mDivHUE;
                     float VAL = ((float) (Y - yDelta)) / mDivVAL;
                     updateColor(view, HUE, VAL);
@@ -406,8 +402,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         ((GradientDrawable) square.getBackground()).setColor(dynamicColor);
 
         // Обновляем основной параллельно
-        ((GradientDrawable) findViewById(R.id.imageView_chosen).getBackground()).setColor(dynamicColor);
-
+        changeMainColor(currentColorHSV, false);
     }
 
     /** Возвращает цвет квадратика по умолчанию
