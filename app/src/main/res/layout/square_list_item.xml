@@ -10,7 +10,7 @@
     <ImageButton
         android:id="@+id/imageButton_colored_square"
         style="@style/ColoredSquare"
-        tools:background="@drawable/colored_square"
+        android:background="@drawable/colored_square"
         android:longClickable="true"
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true" />

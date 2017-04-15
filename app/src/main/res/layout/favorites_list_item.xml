@@ -11,7 +11,7 @@
     <ImageButton
         android:id="@+id/imageButton_favorite_color"
         style="@style/FavoritesSquare"
-        tools:background="@drawable/colored_square"
+        android:background="@drawable/colored_square"
         android:onClick="clickOnFavSquare"
         android:clickable="true"
         android:layout_centerVertical="true"
