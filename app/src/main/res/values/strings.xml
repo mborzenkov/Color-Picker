@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Color Picker</string>
     <string name="label_chosen_color">Chosen color</string>
-    <string name="label_favorites">Last colors</string>
+    <string name="label_favorites">Favorite colors</string>
     <string name="RGB" translatable="false">RGB</string>
     <string name="HSV" translatable="false">HSV</string>
     <string name="RGB_VAL" translatable="false">244, 244, 244</string>

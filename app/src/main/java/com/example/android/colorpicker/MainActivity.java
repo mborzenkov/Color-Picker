@@ -49,16 +49,16 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private Vibrator mVibrator;
     private Handler mHandler = new Handler();
 
-    private int mNumberOfSquares;
-    private int mFavoritesMax;
+    private int mNumberOfSquares = 16;
+    private int mFavoritesMax = 4;
     private int mStepHUE;
     private int mDivHUE;
     private int mDivVAL;
 
-    private int[] mArrayOfGradient;
+    private int[] mArrayOfGradient = new int[mNumberOfSquares + 1];
     private List<float[]> mSquareColorsHSV = new ArrayList<>();
     private List<float[]> mSquareStandardColorsHSV;
-    private List<Integer> mFavoriteColors = new ArrayList<>();
+    private int[] mFavoriteColors = new int[mFavoritesMax];
     private float[] chosenColorHSV = new float[3];
 
     private boolean editingMode = false;
@@ -68,7 +68,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private int yDelta = 0;
     private long timeout = 0;
 
-    // TODO: Изменить поведение избранных цветов - сделать возможность их избирать с выбором места и заменой
     // TODO: Изменение цветовой палитры, чтобы все цвета были красивые и первым был красный
 
     /* TODO: Чистка кода и рефакторинг
@@ -119,7 +118,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         Log.i("DISPLAY", "WI: " + wi + ", HI: " + hi);
 
         // Эти два массива нужны для создания мультиградиента
-        mArrayOfGradient = new int[mNumberOfSquares + 1];
         final float[] arrayOfPositions = new float[mNumberOfSquares + 1];
         //- Инициализация
 
@@ -178,6 +176,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             mSquareDrawable.setColor(Color.TRANSPARENT);
             View favSquare = mLayoutInflater.inflate(R.layout.favorites_list_item, mFavoritesLinearLayout, false);
             View squareButton = favSquare.findViewById(R.id.imageButton_favorite_color);
+            squareButton.setOnLongClickListener(this);
             squareButton.setBackground(mSquareDrawable);
             squareButton.setTag(i);
             mFavoritesLinearLayout.addView(favSquare);
@@ -207,8 +206,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
 
         if (savedInstanceState != null) {
-            for (Integer color : savedInstanceState.getIntegerArrayList(FAVORITES_KEY)) {
-                addFavorite(color);
+            mFavoriteColors = savedInstanceState.getIntArray(FAVORITES_KEY);
+            for (int i = 0; i < mFavoriteColors.length; i++) {
+                if (mFavoriteColors[i] != 0) setFavoriteColor(i, mFavoriteColors[i]);
             }
         }
 
@@ -217,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putIntegerArrayList(FAVORITES_KEY, (ArrayList<Integer>) mFavoriteColors);
+        outState.putIntArray(FAVORITES_KEY, mFavoriteColors);
         outState.putFloatArray(CHOSEN_KEY, chosenColorHSV);
     }
 
@@ -246,7 +246,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         final int position = (Integer) view.getTag();
         float[] colorOfSquare = mSquareColorsHSV.get(position);
         changeMainColor(colorOfSquare, true);
-        addFavorite(Color.HSVToColor(colorOfSquare));
     }
 
     /** Обработчик нажатия на Favorites квадратик
@@ -255,9 +254,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
      */
     public void clickOnFavSquare(View view) {
         final int position = (Integer) view.getTag();
-        if (position < mFavoriteColors.size()) {
+        if (mFavoriteColors[position] != 0) {
             float[] colorOfSquare = new float[3];
-            Color.colorToHSV(mFavoriteColors.get(position), colorOfSquare);
+            Color.colorToHSV(mFavoriteColors[position], colorOfSquare);
             changeMainColor(colorOfSquare, true);
         }
     }
@@ -276,31 +275,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         mActionBar.setBackgroundDrawable(new ColorDrawable(color));
         mRGBValueTextView.setText("#" + Color.red(color) + ", " + Color.green(color) + ", " + Color.blue(color));
         mHSVValueTextView.setText("" + String.format(Locale.US, "%.2f", colorHSV[0]) + ", " + String.format(Locale.US, "%.2f", colorHSV[1]) + ", " + String.format(Locale.US, "%.2f", colorHSV[2]));
-    }
-
-    /** Добавляет цвет в избранное. Только если еще нет такого цвета. Заменяет последний, если уже заняты все слоты.
-     *
-     * @param colorHSV Цвет в HSV, float[] размерностью 3
-     */
-    private void addFavorite(int color) {
-        if (mFavoriteColors.indexOf(color) == -1) {
-
-            if (mFavoriteColors.size() < mFavoritesMax) {
-                mFavoriteColors.add(color);
-                int i = mFavoriteColors.size()-1;
-                View favSquare = mFavoritesLinearLayout.getChildAt(i).findViewById(R.id.imageButton_favorite_color);
-                ((GradientDrawable) favSquare.getBackground()).setColor(color);
-            } else {
-                mFavoriteColors.add(0, color);
-                mFavoriteColors.remove(mFavoriteColors.size()-1);
-                for (int i = 0; i < mFavoriteColors.size(); i++) {
-                    View favSquare = mFavoritesLinearLayout.getChildAt(i).findViewById(R.id.imageButton_favorite_color);
-                    ((GradientDrawable) favSquare.getBackground()).setColor(mFavoriteColors.get(i));
-                }
-            }
-
-
-        }
     }
 
     @Override
@@ -431,11 +405,28 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public boolean onLongClick(View v) {
-        if (!editingMode) {
-            editingMode = true;
-            mScrollView.requestDisallowInterceptTouchEvent(true);
-            vibrate();
+        switch (v.getId()) {
+            case R.id.imageButton_colored_square:
+                if (!editingMode) {
+                    editingMode = true;
+                    mScrollView.requestDisallowInterceptTouchEvent(true);
+                    vibrate();
+                }
+                return false;
+            case R.id.imageButton_favorite_color:
+                Log.i("EVENT", "Long press on fav square " + v.getTag());
+                int position = (Integer) v.getTag();
+                setFavoriteColor(position, Color.HSVToColor(chosenColorHSV));
+                vibrate();
+                return true;
         }
         return false;
+    }
+
+    // TODO: Написать javadoc
+    private void setFavoriteColor(int position, int color) {
+        View favSquare = mFavoritesLinearLayout.getChildAt(position).findViewById(R.id.imageButton_favorite_color);
+        ((GradientDrawable) favSquare.getBackground()).setColor(color);
+        mFavoriteColors[position] = color;
     }
 }

@@ -2,5 +2,5 @@
 <resources>
     <string name="app_name">Цветовая палитра</string>
     <string name="label_chosen_color">Выбранный цвет</string>
-    <string name="label_favorites">Последние цвета</string>
+    <string name="label_favorites">Любимые цвета</string>
 </resources>
