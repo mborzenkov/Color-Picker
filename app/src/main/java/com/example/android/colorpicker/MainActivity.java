@@ -227,10 +227,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
 
         // Ставим цвет у главного квадратика и у приложения
-        float [] chosenColorHSV = savedInstanceState != null ? savedInstanceState.getFloatArray(CHOSEN_KEY) : copyOfColor(mSquareColorsHSV.get(0));
         mSquareDrawable = getSquareDrawable();
         findViewById(R.id.imageView_chosen).setBackground(mSquareDrawable);
-        changeMainColor(chosenColorHSV, true);
+        if (savedInstanceState == null) {
+            float[] chosenColorHSV = copyOfColor(mSquareColorsHSV.get(0));
+            changeMainColor(chosenColorHSV, true);
+        }
 
         // Создаем мультиградиент и устанавливаем его
         ShapeDrawable.ShaderFactory shaderFactory = new ShapeDrawable.ShaderFactory() {
@@ -254,13 +256,24 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             mSquareStandardColorsHSV.add(copyOfColor(val));
         }
 
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
         if (savedInstanceState != null) {
-            mFavoriteColors = savedInstanceState.getIntArray(FAVORITES_KEY);
-            for (int i = 0; i < mFavoriteColors.length; i++) {
-                if (mFavoriteColors[i] != 0) setFavoriteColor(i, mFavoriteColors[i]);
+            int[] favoritesFromState = savedInstanceState.getIntArray(FAVORITES_KEY);
+            if (favoritesFromState != null) {
+                for (int i = 0; i < favoritesFromState.length; i++) {
+                    if (favoritesFromState[i] != 0) setFavoriteColor(i, favoritesFromState[i]);
+                }
+                mFavoriteColors = Arrays.copyOf(favoritesFromState, favoritesFromState.length);
+            }
+            float [] chosenColorHSV = savedInstanceState.getFloatArray(CHOSEN_KEY);
+            if (chosenColorHSV != null) {
+                changeMainColor(chosenColorHSV, true);
             }
         }
-
     }
 
     @Override
@@ -374,7 +387,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     /** Обработчик нажатия на квадратик
      * При вызове меняет цвет у главного квадратика, надписей вокруг него, строки меню и Favorites
-     * @param view Квадратик
+     * @param square Квадратик
      */
     private void clickOnSquare(@NonNull ImageButton square) {
         if (square.getTag() != null) {
